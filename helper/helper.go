@@ -24,9 +24,15 @@ package helper
 
 import (
 	"time"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 
 	"github.com/fatih/color"
 	"github.com/briandowns/spinner"
+
+	"sos-cli/model"
+	"sos-cli/config"
 )
 
 var (
@@ -48,4 +54,30 @@ func StartLoader() {
 
 func StopLoader() {
 	Loader.Stop()
+}
+
+func GetSessionIp(sessionId string) string{
+	resp, err := http.Get(config.API + "sessions/" + sessionId)
+
+	if err != nil {
+		RedPanic(err.Error())
+	}
+	defer resp.Body.Close()
+
+	if (resp.StatusCode < 300) {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			RedPanic(err.Error())
+		}
+
+		var session model.Session
+		err = json.Unmarshal(body, &session)
+		if err != nil {
+			RedPanic(err.Error())
+		}
+
+		return session.VpnIp
+	} else {
+		return ""
+	}
 }

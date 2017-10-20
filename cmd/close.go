@@ -25,51 +25,59 @@ package cmd
 import (
 	"fmt"
 	"errors"
-	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 
 	"sos-cli/helper"
-	"sos-cli/config"
 )
 
-func connectSession(sessionId string) {
+func closeConnection(sessionId string) {
 	vpnIp := helper.GetSessionIp(sessionId)
-	port := config.DEFAULT_SSH_PORT
 
 	if (len(vpnIp) > 0) {
-		fmt.Printf("Try connection on %s session...\n", helper.GreenString(sessionId))
+		helper.StartLoader()
+		fmt.Printf("Try to close %s session...\n", helper.GreenString(sessionId))
 
-		vpnCmd := exec.Command("/opt/nethsos/helpers/nethsos-start-ssh", vpnIp, port)
-		vpnCmd.Stdin = os.Stdin
-		vpnCmd.Stdout = os.Stdout
-		vpnCmd.Stderr = os.Stderr
+		vpmCmd := exec.Command("ssh", "-p", "981", "root@" + vpnIp, "systemctl", "stop", "sshd-nethsos")
 
-		if err := vpnCmd.Run(); err != nil {
+		if err := vpmCmd.Start(); err != nil {
 			helper.RedPanic(err.Error())
+		}
+
+		if err := vpmCmd.Wait(); err != nil {
+			if exiterr, ok := err.(*exec.ExitError); ok {
+				if exiterr.Error() == "exit status 255" {
+					helper.StopLoader()
+					fmt.Printf("Session %s closed!\n", helper.GreenString(sessionId))
+				} else {
+					helper.RedPanic(exiterr.Error())
+				}
+			} else {
+				helper.RedPanic(err.Error())
+			}
 		}
 	} else {
 		helper.ErrorLog("Error: session %s not found\n", sessionId)
 	}
 }
 
-var connectCmd = &cobra.Command{
-	Use: "connect [session-id]",
-	Short: "Connect to server by specify Session ID",
+var closeCmd = &cobra.Command{
+	Use: "close [session-id]",
+	Short: "Close Session ID and remove VPN connection",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-		  return errors.New("requires session-id")
+		return errors.New("requires session-id")
 		}
 		return nil;
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		sessionId := args[0]
 
-		connectSession(sessionId)
+		closeConnection(sessionId)
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(connectCmd)
+	RootCmd.AddCommand(closeCmd)
 }

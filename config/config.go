@@ -24,5 +24,6 @@ package config
 
 var (
 	VERSION = "0.0.1"
+	DEFAULT_SSH_PORT = "981"
 	API = "http://localhost:8080/api/"
 )
