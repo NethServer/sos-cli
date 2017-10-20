@@ -27,8 +27,6 @@ import (
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
-	"time"
-	"strconv"
 	"bytes"
 
 	"github.com/spf13/cobra"
@@ -51,7 +49,7 @@ func printJSON(body []byte) {
 	fmt.Println(string(prettyJSON.Bytes()))
 }
 
-func printSession(session model.SessionOutput) {
+func printSession(session model.Session) {
 	if (jsonFlag) {
 		jsonPrint := []byte(`{
 			"session":"` +session.SessionId + `",
@@ -89,24 +87,7 @@ func listSessions() {
 		}
 
 		for i := 0; i < len(sessions); i++ {
-			sessionId := sessions[i].SessionId
-			vpn := sessions[i].VpnIp
-			lk := sessions[i].Lk
-
-			started, err := strconv.ParseInt(strconv.Itoa(sessions[i].Started), 10, 64)
-			if err != nil {
-				helper.RedPanic(err.Error())
-			}
-
-			sessionToPrint := model.SessionOutput{
-				SessionId: sessionId,
-				Lk: lk,
-				VpnIp: vpn,
-				Started: time.Unix(started, 0).String(),
-			}
-
-			printSession(sessionToPrint)
-
+			printSession(sessions[i])
 		}
 	} else {
 		helper.ErrorLog("No sessions found\n")
@@ -133,22 +114,7 @@ func listSession(sessionId string) {
 			helper.RedPanic(err.Error())
 		}
 
-		vpn := session.VpnIp
-		lk := session.Lk
-
-		started, err := strconv.ParseInt(strconv.Itoa(session.Started), 10, 64)
-		if err != nil {
-			helper.RedPanic(err.Error())
-		}
-
-		sessionToPrint := model.SessionOutput{
-			SessionId: sessionId,
-			Lk: lk,
-			VpnIp: vpn,
-			Started: time.Unix(started, 0).String(),
-		}
-
-		printSession(sessionToPrint)
+		printSession(session)
 	} else {
 		helper.ErrorLog("No session %s found\n", sessionId)
 	}
