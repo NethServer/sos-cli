@@ -46,9 +46,7 @@ func connectSession(sessionId string) {
 		vpnCmd.Stdout = os.Stdout
 		vpnCmd.Stderr = os.Stderr
 
-		if err := vpnCmd.Run(); err != nil {
-			helper.RedPanic(err.Error())
-		}
+		vpnCmd.Run()
 	} else {
 		helper.ErrorLog("Error: session %s not found\n", sessionId)
 	}
