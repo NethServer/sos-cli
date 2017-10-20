@@ -30,33 +30,33 @@ import (
 	"github.com/spf13/cobra"
 
 	"sos-cli/helper"
+	"sos-cli/config"
 )
 
 func closeConnection(sessionId string) {
 	vpnIp := helper.GetSessionIp(sessionId)
+	port := config.DEFAULT_SSH_PORT
 
 	if (len(vpnIp) > 0) {
 		helper.StartLoader()
 		fmt.Printf("Try to close %s session...\n", helper.GreenString(sessionId))
 
-		vpmCmd := exec.Command("ssh", "-p", "981", "root@" + vpnIp, "systemctl", "stop", "sshd-nethsos")
+		vpnCmd := exec.Command("/opt/nethsos/helpers/nethsos-stop-ssh", vpnIp, port)
 
-		if err := vpmCmd.Start(); err != nil {
+		if err := vpnCmd.Start(); err != nil {
 			helper.RedPanic(err.Error())
 		}
 
-		if err := vpmCmd.Wait(); err != nil {
+		if err := vpnCmd.Wait(); err != nil {
 			if exiterr, ok := err.(*exec.ExitError); ok {
-				if exiterr.Error() == "exit status 255" {
-					helper.StopLoader()
-					fmt.Printf("Session %s closed!\n", helper.GreenString(sessionId))
-				} else {
-					helper.RedPanic(exiterr.Error())
-				}
+				helper.RedPanic(exiterr.Error())
 			} else {
 				helper.RedPanic(err.Error())
 			}
 		}
+
+		helper.StopLoader()
+		fmt.Printf("Session %s closed!\n", helper.GreenString(sessionId))
 	} else {
 		helper.ErrorLog("Error: session %s not found\n", sessionId)
 	}
