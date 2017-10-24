@@ -25,13 +25,49 @@ package cmd
 import (
 	"fmt"
 	"errors"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 
+	"sos-cli/model"
 	"sos-cli/helper"
 	"sos-cli/config"
 )
+
+var (
+	allCloseFlag = false
+)
+
+func closeConnections() {
+	resp, err := http.Get(config.API + "sessions")
+
+	if err != nil {
+		helper.RedPanic(err.Error())
+	}
+	defer resp.Body.Close()
+
+	if (resp.StatusCode < 300) {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			helper.RedPanic(err.Error())
+		}
+
+		var sessions[] model.Session
+		err = json.Unmarshal(body, &sessions)
+		if err != nil {
+			helper.RedPanic(err.Error())
+		}
+
+		for i := 0; i < len(sessions); i++ {
+			closeConnection(sessions[i].SessionId)
+		}
+	} else {
+		helper.ErrorLog("No sessions found\n")
+	}
+}
 
 func closeConnection(sessionId string) {
 	vpnIp := helper.GetSessionIp(sessionId)
@@ -66,18 +102,22 @@ var closeCmd = &cobra.Command{
 	Use: "close [session-id]",
 	Short: "Close Session ID and remove VPN connection",
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-		return errors.New("requires session-id")
+		if len(args) < 1 && !allCloseFlag {
+			return errors.New(helper.RedString("requires session-id"))
 		}
 		return nil;
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		sessionId := args[0]
-
-		closeConnection(sessionId)
+		if allCloseFlag {
+			closeConnections()
+		} else {
+			closeConnection(args[0])
+		}
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(closeCmd)
+
+	closeCmd.Flags().BoolVarP(&allCloseFlag, "all", "a", false, "Print all sessions")
 }
