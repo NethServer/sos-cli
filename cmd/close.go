@@ -119,5 +119,5 @@ var closeCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(closeCmd)
 
-	closeCmd.Flags().BoolVarP(&allCloseFlag, "all", "a", false, "Print all sessions")
+	closeCmd.Flags().BoolVarP(&allCloseFlag, "all", "a", false, "Close all sessions")
 }

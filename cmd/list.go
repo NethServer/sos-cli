@@ -24,7 +24,6 @@ package cmd
 
 import (
 	"fmt"
-	"errors"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
@@ -39,7 +38,6 @@ import (
 
 var (
 	jsonFlag = false
-	allListFlag = false
 )
 
 func printJSON(body []byte) {
@@ -125,18 +123,13 @@ func listSession(sessionId string) {
 var listCmd = &cobra.Command{
 	Use: "list [session-id]",
 	Short: "Show all VPNs of connected servers",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 && !allListFlag{
-			return errors.New(helper.RedString("requires session-id"))
-		}
-		return nil;
-	},
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if allListFlag {
+		if len(args) == 1 {
+            listSession(args[0])
+        } else {
 			listSessions()
-		} else {
-			listSession(args[0])
-		}
+        }
 	},
 }
 
@@ -144,5 +137,4 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 
 	listCmd.Flags().BoolVarP(&jsonFlag, "json", "j", false, "Print output in JSON format")
-	listCmd.Flags().BoolVarP(&allListFlag, "all", "a", false, "Print all sessions")
 }
